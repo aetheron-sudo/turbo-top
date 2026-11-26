@@ -10,14 +10,35 @@ if (!PW) { PW = crypto.randomBytes(6).toString("hex"); console.log("ADMIN_PASSWO
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
 const same = (a, b) => crypto.timingSafeEqual(sha(a), sha(b));
 
-// ---------- circuits (data/tracks.json) ----------
+// ---------- circuits ----------
+// Stockage PERMANENT si UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN sont définis (base Redis gratuite d'Upstash),
+// sinon simple fichier data/tracks.json (effacé à chaque redémarrage sur les hébergeurs gratuits comme Render).
+const UP_URL = process.env.UPSTASH_REDIS_REST_URL, UP_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN, KEY = "turbotop:tracks";
+const useUp = !!(UP_URL && UP_TOKEN);
+async function up(cmd) {
+  const r = await fetch(UP_URL, { method: "POST", headers: { Authorization: "Bearer " + UP_TOKEN }, body: JSON.stringify(cmd) });
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "HTTP " + r.status);
+  return j.result;
+}
 let tracks = [];
-try { tracks = JSON.parse(fs.readFileSync(DATA, "utf8")); } catch (e) {}
-function saveTracks() {
+async function loadTracks() {
+  try {
+    if (useUp) { const v = await up(["GET", KEY]); if (v) tracks = JSON.parse(v); console.log("Circuits chargés depuis Upstash :", tracks.length); }
+    else { tracks = JSON.parse(fs.readFileSync(DATA, "utf8")); console.log("Circuits chargés depuis data/tracks.json :", tracks.length); }
+  } catch (e) { console.log("Aucun circuit chargé (" + e.message + ")"); }
+  broadcastTracks();
+}
+async function saveTracks() {
+  if (useUp) return up(["SET", KEY, JSON.stringify(tracks)]);
   fs.mkdirSync(path.dirname(DATA), { recursive: true });
   const tmp = DATA + ".tmp";
   fs.writeFileSync(tmp, JSON.stringify(tracks));
   fs.renameSync(tmp, DATA);
+}
+function commit(ack) {
+  saveTracks().then(() => { broadcastTracks(); ack(true); })
+    .catch((e) => { console.log("Sauvegarde impossible :", e.message); ack(false, { err: "sauvegarde impossible" }); });
 }
 
 // ---------- HTTP statique (index.html + sprites/*.png uniquement) ----------
@@ -178,12 +199,12 @@ wss.on("connection", (ws, req) => {
         const i = tracks.findIndex((t) => t.id === id);
         if (i < 0 && tracks.length >= 100) return ack(false, { err: "trop de circuits" });
         if (i >= 0) tracks[i] = { id, ...d }; else tracks.push({ id, ...d });
-        saveTracks(); broadcastTracks(); ack(true); break;
+        commit(ack); break;
       }
       case "track_del": {
         if (!c.admin) return ack(false, { err: "admin requis" });
         tracks = tracks.filter((t) => t.id !== m.id);
-        saveTracks(); broadcastTracks(); ack(true); break;
+        commit(ack); break;
       }
     }
   });
@@ -192,3 +213,4 @@ wss.on("connection", (ws, req) => {
 });
 
 httpServer.listen(PORT, () => console.log("Turbo Top sur http://localhost:" + PORT));
+loadTracks();
