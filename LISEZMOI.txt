@@ -1,0 +1,32 @@
+TURBO TOP - LANCER LE JEU (serveur + salles + admin)
+=====================================================
+Pourquoi un serveur ? Les salles, les circuits partages et l'admin ont besoin d'un petit serveur
+(Node.js). Un simple hebergement de fichiers (ou un double-clic sur index.html) = jeu solo uniquement.
+
+1) Installer Node.js (v18+), puis dans ce dossier :
+     npm install
+2) Lancer (choisis TON mot de passe admin) :
+     Windows (PowerShell) :  $env:ADMIN_PASSWORD="monmotdepasse"; node server.js
+     Mac / Linux          :  ADMIN_PASSWORD=monmotdepasse node server.js
+   -> http://localhost:3000
+3) Acces depuis un telephone / internet avec Cloudflare :
+     cloudflared tunnel --url http://localhost:3000
+   Ouvre l'adresse https://xxxx.trycloudflare.com donnee (les WebSocket passent automatiquement en wss).
+   IMPORTANT : ouvre le jeu via cette adresse (ou http://IP:3000), pas en ouvrant index.html directement.
+
+PANNEAU ADMIN
+-------------
+- Sur l'ecran d'accueil : bouton "Admin" -> entre le mot de passe (ADMIN_PASSWORD).
+- Raccourci : ajoute #admin a l'adresse (ex. https://ton-site/#admin).
+- Une fois connecte (le navigateur s'en souvient), tu peux creer / modifier / supprimer des circuits.
+- Les circuits sont enregistres dans data/tracks.json (sauvegarde-le !).
+- Le serveur refuse toute modification de circuit sans etre connecte admin.
+
+SALLES
+------
+- "Creer une salle" : choisis un circuit -> code a 4 lettres. Les autres la voient dans la liste ou tapent le code.
+- Seul le createur de la salle peut lancer le depart pour tous. 8 joueurs max par salle.
+
+SPRITES
+-------
+Voir sprites/LISEZMOI.txt (PNG de 16x16 a 20x20, avec repli automatique sur les sprites par defaut).
