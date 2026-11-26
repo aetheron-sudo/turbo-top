@@ -72,6 +72,7 @@ function cleanRoomPresence(p, cur) {
   if (!p || typeof p !== "object") return;
   for (const k of ["x", "y", "a", "vx", "vy", "prog", "sk"]) if (k in p) { const v = num(p[k]); if (v !== undefined) cur[k] = v; }
   if ("fin" in p) cur.fin = p.fin === null ? null : (num(p.fin) ?? null);
+  if ("v" in p) cur.v = typeof p.v === "string" && /^[\w-]{1,32}$/.test(p.v) ? p.v : null; // vote pour la prochaine map
   if ("it" in p) cur.it = typeof p.it === "string" && ITEMS.has(p.it) ? p.it : null;
   if (typeof p.name === "string") cur.name = p.name.slice(0, 12);
   if (typeof p.color === "string" && /^#[0-9a-f]{6}$/i.test(p.color)) cur.color = p.color;
@@ -167,8 +168,12 @@ wss.on("connection", (ws, req) => {
         if (!c.room) break;
         if (m.topic === "start") { // seul le chef de salle (1er arrivé) lance le départ
           if ([...c.room.m][0] !== c) break;
-          const d = num(m.data && m.data.d, 60) || 4;
-          for (const o of c.room.m) send(o.ws, { t: "ev", topic: "start", data: { d }, from: c.id });
+          const d = num(m.data && m.data.d, 60) || 4, data = { d }, tid = m.data && m.data.t;
+          if (typeof tid === "string" && /^[\w-]{1,32}$/.test(tid)) { // le chef peut changer de circuit (map votée)
+            data.t = tid; data.n = String(m.data.n || "").slice(0, 24);
+            c.room.meta = { t: tid, n: data.n }; dirtyLobby = true;
+          }
+          for (const o of c.room.m) send(o.ws, { t: "ev", topic: "start", data, from: c.id });
         } else if (TARGETED.has(m.topic)) {
           const to = m.to || (m.data && m.data.to); // l'id du joueur visé peut être dans data.to
           const o = [...c.room.m].find((x) => x.id === to && x !== c);
