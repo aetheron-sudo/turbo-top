@@ -385,7 +385,7 @@ if(E.raw){g.strokeStyle="#fff";g.lineWidth=5/z;g.lineJoin=g.lineCap="round";g.be
 /* Publicité Adsterra : bannière discrète dans les menus et sur l'écran de résultats (entre deux courses).
    Jamais en course, dans l'éditeur, le panneau admin, ni sur un appareil admin. Chargée seulement après consentement. */
 try{(()=>{
-const CK="tt_ads_consent",SIX=182*864e5,OK=/^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+\/([a-f0-9]{32})\/invoke\.js$/i,el=id=>document.getElementById(id);
+const CK="tt_ads_consent",SIX=182*864e5,OK=/^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+\/(?:\d{1,3}\/)?([a-f0-9]{32})(?:\/invoke\.js)?$/i,el=id=>document.getElementById(id);
 let CFG={ads:null},last=0,wasEnd=false,forced=false;
 const getC=()=>{try{const o=JSON.parse(localStorage.getItem(CK));if(o&&(o.v==="1"||o.v==="0")&&Date.now()-o.t<SIX)return o.v}catch(e){}return null};
 const setC=v=>{try{localStorage.setItem(CK,JSON.stringify({v,t:Date.now()}))}catch(e){}};
@@ -395,7 +395,7 @@ const wanted=()=>!!CFG.ads&&!isAH()&&!isAdm&&!adminDev()&&onMenu();
 function loadAd(){
   const a=CFG.ads,m=a&&OK.exec(a.src);if(!m)return;const f=el("adf");
   f.style.width=a.w+"px";f.style.height=a.h+"px";f.width=a.w;f.height=a.h;
-  f.srcdoc='<!doctype html><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:transparent}</style><body><script>atOptions={"key":"'+m[1]+'","format":"iframe","height":'+(+a.h)+',"width":'+(+a.w)+',"params":{}};<\/script><script src="'+a.src+'"><\/script><!--'+Date.now()+'-->';
+  f.srcdoc='<!doctype html><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:transparent}</style><body><script>atOptions={"key":"'+m[1]+'","format":"iframe","height":'+(+a.h)+',"width":'+(+a.w)+',"params":{}};<\/script><script data-cfasync="false" src="'+a.src+'"><\/script><!--'+Date.now()+'-->';
   f.dataset.on="1";last=Date.now();
 }
 function unload(){const f=el("adf");if(f.dataset.on){f.removeAttribute("srcdoc");f.src="about:blank";delete f.dataset.on}}

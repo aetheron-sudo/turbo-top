@@ -34,7 +34,7 @@ function clientIp(req) {
 // ADSTERRA_SIZE = taille du bloc créé dans Adsterra : 320x50 (défaut), 468x60, 728x90 ou 300x250.
 // ADS_TXT       = contenu du fichier /ads.txt si Adsterra t'en donne un (\n pour les retours à la ligne).
 // LEGAL_NAME / CONTACT_EMAIL = éditeur et contact affichés dans les mentions légales.
-const AD_RE = /^(?:https?:)?\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)\/([a-f0-9]{32})\/invoke\.js$/i;
+const AD_RE = /^(?:https?:)?\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)\/((?:\d{1,3}\/)?[a-f0-9]{32}(?:\/invoke\.js)?)$/i;
 const AD_SIZES = ["320x50", "468x60", "728x90", "300x250"];
 function adsConfig() {
   const raw = (process.env.ADSTERRA_SRC || "").trim();
@@ -42,7 +42,7 @@ function adsConfig() {
   const m = AD_RE.exec(raw), size = (process.env.ADSTERRA_SIZE || "320x50").trim();
   if (!m || !AD_SIZES.includes(size)) { console.warn("⚠ ADSTERRA_SRC / ADSTERRA_SIZE invalide : publicité désactivée."); return null; }
   const [w, h] = size.split("x").map(Number);
-  return { src: "https://" + m[1] + "/" + m[2] + "/invoke.js", w, h };
+  return { src: "https://" + m[1] + "/" + m[2], w, h };
 }
 const ADS = adsConfig();
 const SITE = { editor: (process.env.LEGAL_NAME || "").slice(0, 80), email: (process.env.CONTACT_EMAIL || "").slice(0, 80) };
