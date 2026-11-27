@@ -58,7 +58,7 @@ const httpServer = http.createServer((req, res) => {
 });
 
 // ---------- WebSocket ----------
-const wss = new WebSocketServer({ server: httpServer, path: "/ws", maxPayload: 16384 });
+const wss = new WebSocketServer({ server: httpServer, path: "/ws", maxPayload: 65536 });
 const clients = new Map(), rooms = new Map(), tokens = new Set(), fails = new Map();
 let nid = 0, dirtyLobby = false;
 const MAX_PER_ROOM = 8, MAX_ROOMS = 100;
@@ -82,7 +82,7 @@ function validTrack(d) {
   if (!d || typeof d !== "object") return;
   const arr = (a, max, step) =>
     Array.isArray(a) && a.length <= max && a.length % step === 0 && a.every((v) => num(v, 20000) !== undefined) ? a.map(Math.round) : undefined;
-  const pf = arr(d.pf, 200, 2), cf = arr(d.cf || [], 200, 2), bf = arr(d.bf || [], 200, 2), of = arr(d.of || [], 200, 2), sf = arr(d.sf || [], 450, 3);
+  const pf = arr(d.pf, 200, 2), cf = arr(d.cf || [], 200, 2), bf = arr(d.bf || [], 200, 2), of = arr(d.of || [], 1200, 2), sf = arr(d.sf || [], 450, 3);
   const w = num(d.w, 400), laps = num(d.laps, 50);
   if (!pf || pf.length < 8 || !cf || !bf || !of || !sf || !w || w < 60 || !laps || laps < 1) return;
   return { name: String(d.name || "Circuit").slice(0, 24), w: Math.round(w), laps: Math.round(laps), pf, cf, bf, of, sf };
