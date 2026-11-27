@@ -1,0 +1,22 @@
+TES SPRITES ICI  (pixel art 16x16 a 20x20 px)
+==============================================
+Depose tes PNG (fond transparent) dans ce dossier avec EXACTEMENT ces noms.
+Un fichier absent = le jeu utilise le sprite par defaut. Tu peux n'en mettre que quelques-uns.
+Les images sont agrandies sans lissage (pixels nets).
+
+Fichier       Role                                   Taille       Orientation / remarques
+------------  -------------------------------------  -----------  -------------------------------------------
+car.png       Voiture (toutes les voitures)          16-20 px     vue de dessus, AVANT vers la DROITE.
+                                                                  Affichee ~40x40 unites de jeu, avec un halo de
+                                                                  la couleur du joueur dessous.
+box.png       Boite a objets sur la piste            16-20 px     affichee ~30x30
+turbo.png     Icone de l'objet Turbo (HUD)           16-20 px
+oil.png       Flaque d'huile                         16-20 px     affichee ~40x40
+missile.png   Missile                                16-20 px     POINTE vers la DROITE, affiche ~32x32
+finish.png    Ligne d'arrivee                        16-20 px     UNE tuile carree, repetee sur la largeur de
+                                                                  la piste (damier en travers de la piste)
+road.png      Texture de la route                    16-20 px     tuile qui se repete (raccords invisibles),
+                                                                  agrandie x2
+grass.png     Texture de l'herbe                     16-20 px     idem, agrandie x2
+
+Apres modification : rafraichissement force du navigateur (Ctrl+F5).

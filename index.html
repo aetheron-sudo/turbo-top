@@ -46,6 +46,21 @@ input,select{padding:10px;border-radius:8px;border:1px solid var(--bd);backgroun
 #eemp{position:fixed;left:72px;right:60px;top:30%;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;pointer-events:none;color:var(--fg);text-shadow:0 1px 6px var(--bg)}
 #eemp b{font-size:26px}#eemp span{font-weight:500;font-size:15px;max-width:360px;color:var(--fg)}
 #toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 14px;border-radius:8px;display:none;z-index:9}
+
+/* ---- publicité : bannière discrète (menus + entre deux courses), bandeau de consentement, pages légales ---- */
+#adw{position:fixed;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;align-items:center;gap:2px;z-index:4;pointer-events:none}
+#adw.on{display:flex}#adw>*{pointer-events:auto}
+#adslot{display:none;flex-direction:column;align-items:center;gap:1px;max-width:100%}
+#adl{font:10px system-ui;color:var(--mut);letter-spacing:.5px;text-transform:uppercase}
+#adf{border:0;background:transparent;max-width:100%;display:block;color-scheme:normal}
+.lk{background:none;border:0;color:var(--mut);font:11px system-ui;text-decoration:underline;cursor:pointer;padding:3px 5px}
+body.hasad .scr{padding-bottom:calc(var(--adh,0px) + 48px + env(safe-area-inset-bottom,0px))}
+body.cmpon .scr{padding-bottom:calc(230px + env(safe-area-inset-bottom,0px))}
+#cmp{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(560px,96vw);box-sizing:border-box;display:none;flex-direction:column;gap:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;z-index:8;box-shadow:0 6px 24px #0005;font:13px/1.4 system-ui;text-align:left;touch-action:pan-y;max-height:70vh;overflow:auto}
+#cmp.on{display:flex}#cmp p{margin:0}#cmp .row{flex-wrap:nowrap}#cmp .b{flex:1;min-width:0;padding:10px 8px;font-size:15px}
+#pv{position:fixed;inset:0;display:none;z-index:20;background:var(--bg);color:var(--fg);overflow:auto;touch-action:pan-y;padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;user-select:text;-webkit-user-select:text}
+#pv.on{display:block}#pv .in{max-width:640px;margin:0 auto;font:14px/1.55 system-ui;text-align:left}
+#pv h2{font-size:20px;margin:0 0 6px;color:var(--ac)}#pv h3{font-size:15px;margin:18px 0 4px}#pv p,#pv li{margin:4px 0}#pv ul{padding-left:20px}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="hud"><div id="h1"></div><div id="h2"></div><div id="h3"></div></div>
@@ -72,6 +87,16 @@ input,select{padding:10px;border-radius:8px;border:1px solid var(--bd);backgroun
 <div id="eemp"><b>✏️ Dessine ton circuit</b><span>Appuie, trace une grande boucle d’un seul geste, puis relâche : elle se ferme et se lisse toute seule.</span></div>
 <div id="ebt" class="pn"><div id="eht"></div><div id="eop"></div></div>
 </div>
+<div id="adw"><div id="adslot"><span id="adl">Publicité</span><iframe id="adf" title="Publicité" scrolling="no" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"></iframe></div><div><button class="lk" id="lk1">Mentions légales</button>·<button class="lk" id="lk2">Confidentialité</button>·<button class="lk" id="lk3">Cookies &amp; pub</button></div></div>
+<div id="cmp" role="dialog" aria-label="Publicité et cookies"><p><b>Publicité et cookies</b></p><p>Ce jeu est gratuit. Pour payer son hébergement, il affiche une petite bannière de publicité de la régie <b>Adsterra</b>, uniquement dans les menus et entre deux courses, jamais pendant une course. Si vous acceptez, Adsterra peut déposer ou lire des cookies et identifiants sur votre appareil pour afficher, mesurer et éventuellement personnaliser ces publicités. Si vous refusez, aucune publicité n’est chargée et rien n’est déposé. Votre choix est conservé 6 mois et modifiable à tout moment via « Cookies &amp; pub ».</p><div class="row"><button class="b g" id="cno">Tout refuser</button><button class="b g" id="cyes">Tout accepter</button></div><button class="lk" id="cmore">En savoir plus</button></div>
+<div id="pv"><div class="in"><h2>Mentions légales</h2>
+<p><b>Éditeur :</b> <span id="pve">non renseigné</span>, personne physique, projet personnel de jeu en ligne. <b>Contact :</b> <span id="pvm">non renseigné</span>. Le directeur de la publication est l’éditeur.</p>
+<p><b>Hébergeur :</b> Render Services, Inc., 525 Brannan St, Suite 300, San Francisco, CA 94107, États-Unis (render.com).</p>
+<h2 style="margin-top:22px">Confidentialité, cookies et publicité</h2>
+<h3>Le jeu</h3><ul><li>Le pseudo et la couleur que vous choisissez ne sont envoyés au serveur que si vous rejoignez une salle multijoueur. Ils sont visibles des autres joueurs de la salle et restent en mémoire le temps de la salle, sans être enregistrés.</li><li>Votre adresse IP sert, en mémoire, à limiter les abus (nombre de connexions) et peut figurer dans les journaux techniques de l’hébergeur.</li><li>Le jeu n’utilise aucun outil de mesure d’audience. Il n’utilise le stockage local de votre navigateur que pour retenir votre choix sur la publicité et, pour l’administrateur, sa session et ses brouillons de circuits.</li></ul>
+<h3>La publicité (Adsterra)</h3><ul><li>Finalité : financer le site avec une bannière publicitaire affichée dans les menus et entre deux courses.</li><li>Base légale : votre consentement. Tant que vous n’avez pas accepté, aucun script ni cookie d’Adsterra n’est chargé ; continuer à naviguer ne vaut pas acceptation.</li><li>Si vous acceptez, Adsterra et ses annonceurs peuvent déposer ou lire des cookies et identifiants pour afficher, mesurer et éventuellement personnaliser les annonces. Adsterra est responsable de ces traitements : consultez sa politique de confidentialité sur adsterra.com.</li><li>Vous pouvez changer d’avis à tout moment avec le bouton ci-dessous. Votre choix est conservé 6 mois. Les cookies déjà déposés par un tiers peuvent rester sur votre appareil : supprimez-les dans les réglages de votre navigateur.</li></ul>
+<h3>Vos droits</h3><p>Vous pouvez demander l’accès, la rectification, l’effacement ou la limitation de vos données, et vous opposer à leur traitement, en écrivant au contact ci-dessus. Vous pouvez aussi introduire une réclamation auprès de la CNIL (cnil.fr).</p>
+<div class="row" style="justify-content:flex-start;margin-top:16px"><button class="b g" id="pvc">Modifier mon choix sur la publicité</button><button class="b" id="pvx">Fermer</button></div></div></div>
 <script>
 const NET=!window.claude;
 if(NET){(()=>{const url=(location.protocol=="https:"?"wss://":"ws://")+location.host+"/ws",st=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
@@ -356,4 +381,43 @@ if(E.tool!="start"){const n=E.tool=="cp"?1:E.cnt[E.tool];drawIt({k:E.tool,g:M.fl
 if(E.tool=="trace"){const r=9/z;for(let i=0;i<ed.pts.length;i++){const p=pos(i*12+6);g.beginPath();g.arc(p.x,p.y,r*.62,0,7);g.fillStyle="#ffffff55";g.fill();g.strokeStyle="#fff";g.lineWidth=2/z;g.stroke()}
 ed.pts.forEach((p,i)=>{const s=E.sel&&E.sel.pt===i;g.beginPath();g.arc(p[0],p[1],r*(s?1.3:1),0,7);g.fillStyle=s?"#fff":i?"#f2c94c":"#e5322d";g.fill();g.lineWidth=2.5/z;g.strokeStyle="#000a";g.stroke()})}}
 if(E.raw){g.strokeStyle="#fff";g.lineWidth=5/z;g.lineJoin=g.lineCap="round";g.beginPath();E.raw.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.fillStyle="#22c55e";g.beginPath();g.arc(E.raw[0][0],E.raw[0][1],9/z,0,7);g.fill()}}
+</script><script>
+/* Publicité Adsterra : bannière discrète dans les menus et sur l'écran de résultats (entre deux courses).
+   Jamais en course, dans l'éditeur, le panneau admin, ni sur un appareil admin. Chargée seulement après consentement. */
+try{(()=>{
+const CK="tt_ads_consent",SIX=182*864e5,OK=/^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+\/([a-f0-9]{32})\/invoke\.js$/i,el=id=>document.getElementById(id);
+let CFG={ads:null},last=0,wasEnd=false,forced=false;
+const getC=()=>{try{const o=JSON.parse(localStorage.getItem(CK));if(o&&(o.v==="1"||o.v==="0")&&Date.now()-o.t<SIX)return o.v}catch(e){}return null};
+const setC=v=>{try{localStorage.setItem(CK,JSON.stringify({v,t:Date.now()}))}catch(e){}};
+const adminDev=()=>{try{return!!localStorage.getItem("tt_tok")}catch(e){return false}};
+const onMenu=()=>["home","lob","trk","end"].some(i=>el(i).classList.contains("on"))&&(mode==="menu"||mode==="end");
+const wanted=()=>!!CFG.ads&&!isAH()&&!isAdm&&!adminDev()&&onMenu();
+function loadAd(){
+  const a=CFG.ads,m=a&&OK.exec(a.src);if(!m)return;const f=el("adf");
+  f.style.width=a.w+"px";f.style.height=a.h+"px";f.width=a.w;f.height=a.h;
+  f.srcdoc='<!doctype html><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:transparent}</style><body><script>atOptions={"key":"'+m[1]+'","format":"iframe","height":'+(+a.h)+',"width":'+(+a.w)+',"params":{}};<\/script><script src="'+a.src+'"><\/script><!--'+Date.now()+'-->';
+  f.dataset.on="1";last=Date.now();
+}
+function unload(){const f=el("adf");if(f.dataset.on){f.removeAttribute("srcdoc");f.src="about:blank";delete f.dataset.on}}
+function adsUI(){
+  const w=wanted(),c=getC(),ask=w&&(c===null||forced),run=w&&c==="1",isEnd=el("end").classList.contains("on");
+  document.body.classList.toggle("hasad",w);document.body.classList.toggle("cmpon",ask);
+  el("adw").classList.toggle("on",w);el("cmp").classList.toggle("on",ask);
+  el("adslot").style.display=run?"flex":"none";
+  document.documentElement.style.setProperty("--adh",(run&&CFG.ads?CFG.ads.h+16:0)+"px");
+  if(run){const f=el("adf");if(!f.dataset.on||(isEnd&&!wasEnd&&Date.now()-last>60000))loadAd()}else unload();
+  if(!w)el("pv").classList.remove("on");
+  wasEnd=isEnd;
+}
+const choose=v=>{setC(v);forced=false;adsUI()};
+el("cno").onclick=()=>choose("0");el("cyes").onclick=()=>choose("1");
+const openPv=()=>el("pv").classList.add("on"),openCmp=()=>{forced=true;adsUI()};
+el("lk1").onclick=el("lk2").onclick=el("cmore").onclick=openPv;el("lk3").onclick=el("pvc").onclick=()=>{el("pv").classList.remove("on");openCmp()};
+el("pvx").onclick=()=>el("pv").classList.remove("on");
+const mo=new MutationObserver(adsUI);document.querySelectorAll(".scr").forEach(e=>mo.observe(e,{attributes:true,attributeFilter:["class"]}));
+addEventListener("hashchange",adsUI);addEventListener("storage",adsUI);
+fetch("/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).then(j=>{
+  CFG=j||{ads:null};el("pve").textContent=j.editor||"non renseigné";el("pvm").textContent=j.email||"non renseigné";adsUI();
+}).catch(()=>{});
+})()}catch(e){console.warn("pub désactivée",e)}
 </script></body></html>

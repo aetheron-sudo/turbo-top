@@ -30,3 +30,17 @@ SALLES
 SPRITES
 -------
 Voir sprites/LISEZMOI.txt (PNG de 16x16 a 20x20, avec repli automatique sur les sprites par defaut).
+
+
+PUBLICITE ADSTERRA
+------------------
+Variables d'environnement a definir sur Render (Environment) :
+  ADSTERRA_SRC   URL du invoke.js de TON code Adsterra, ex. //xxxx.com/0123...cdef/invoke.js
+                 (vide = aucune pub et aucun bandeau de consentement)
+  ADSTERRA_SIZE  taille du bloc cree chez Adsterra : 320x50 (defaut), 468x60, 728x90 ou 300x250
+  LEGAL_NAME     ton nom ou pseudo d'editeur (mentions legales)
+  CONTACT_EMAIL  email de contact (mentions legales / droits RGPD)
+  ADS_TXT        (optionnel) contenu de ads.txt si Adsterra t'en fournit un, \n pour les retours a la ligne
+Ou s'affiche la pub : accueil, salles, choix du circuit, ecran de resultats (entre deux courses).
+Jamais : en course, salle d'attente, editeur, panneau admin, #admin, ni sur un appareil ou tu es connecte admin.
+La pub n'est chargee qu'apres clic sur "Tout accepter" (bandeau CNIL : "Tout refuser" au meme niveau).

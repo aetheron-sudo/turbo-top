@@ -28,6 +28,27 @@ function clientIp(req) {
   return String(xff[xff.length - HOPS] || sock).slice(0, 64);
 }
 
+
+// ---------- publicité (Adsterra) : config publique lue dans les variables d'environnement ----------
+// ADSTERRA_SRC  = l'URL du fichier invoke.js de TON code Adsterra (ex. //xxxx.com/0123...cdef/invoke.js). Vide = aucune pub, aucun bandeau.
+// ADSTERRA_SIZE = taille du bloc créé dans Adsterra : 320x50 (défaut), 468x60, 728x90 ou 300x250.
+// ADS_TXT       = contenu du fichier /ads.txt si Adsterra t'en donne un (\n pour les retours à la ligne).
+// LEGAL_NAME / CONTACT_EMAIL = éditeur et contact affichés dans les mentions légales.
+const AD_RE = /^(?:https?:)?\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)\/([a-f0-9]{32})\/invoke\.js$/i;
+const AD_SIZES = ["320x50", "468x60", "728x90", "300x250"];
+function adsConfig() {
+  const raw = (process.env.ADSTERRA_SRC || "").trim();
+  if (!raw) return null;
+  const m = AD_RE.exec(raw), size = (process.env.ADSTERRA_SIZE || "320x50").trim();
+  if (!m || !AD_SIZES.includes(size)) { console.warn("⚠ ADSTERRA_SRC / ADSTERRA_SIZE invalide : publicité désactivée."); return null; }
+  const [w, h] = size.split("x").map(Number);
+  return { src: "https://" + m[1] + "/" + m[2] + "/invoke.js", w, h };
+}
+const ADS = adsConfig();
+const SITE = { editor: (process.env.LEGAL_NAME || "").slice(0, 80), email: (process.env.CONTACT_EMAIL || "").slice(0, 80) };
+const ADS_TXT = (process.env.ADS_TXT || "").replace(/\\n/g, "\n");
+console.log(ADS ? "Publicité Adsterra activée (" + ADS.w + "x" + ADS.h + ")" : "Publicité désactivée (ADSTERRA_SRC non défini)");
+
 // ---------- circuits ----------
 // Stockage PERMANENT si UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN sont définis (base Redis gratuite d'Upstash),
 // sinon simple fichier data/tracks.json (effacé à chaque redémarrage sur les hébergeurs gratuits comme Render).
@@ -64,6 +85,15 @@ const httpServer = http.createServer((req, res) => {
   let p;
   try { p = decodeURIComponent((req.url || "/").split("?")[0]); } catch (e) { res.writeHead(400); return res.end(); }
   if (p === "/") p = "/index.html";
+  if (p === "/site-config.json") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
+    return res.end(JSON.stringify({ ads: ADS, ...SITE }));
+  }
+  if (p === "/ads.txt") {
+    if (!ADS_TXT) { res.writeHead(404); return res.end("404"); }
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" });
+    return res.end(ADS_TXT + "\n");
+  }
   if (!(p === "/index.html" || /^\/sprites\/[\w.-]+\.png$/.test(p))) { res.writeHead(404); return res.end("404"); }
   fs.readFile(path.join(ROOT, p), (err, buf) => {
     if (err) { res.writeHead(404); return res.end("404"); }
