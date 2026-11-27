@@ -9,6 +9,24 @@ let PW = process.env.ADMIN_PASSWORD;
 if (!PW) { PW = crypto.randomBytes(6).toString("hex"); console.log("ADMIN_PASSWORD non défini -> mot de passe temporaire :", PW); }
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
 const same = (a, b) => crypto.timingSafeEqual(sha(a), sha(b));
+if (PW.length < 12) console.warn("⚠ ADMIN_PASSWORD trop court : prends 12+ caractères aléatoires.");
+
+// ---------- sécurité : IP du client, limites de connexions, durée des jetons ----------
+// TRUST_PROXY_HOPS = nombre de proxys de confiance devant le serveur (Render : 1). 0 = pas de proxy (test en local).
+// On lit X-Forwarded-For en partant de la DROITE : ce qu'un client écrit à gauche est ignoré, donc impossible à falsifier.
+const HOPS = Math.max(0, +(process.env.TRUST_PROXY_HOPS ?? 1) || 0);
+const MAX_CONN_PER_IP = +process.env.MAX_CONN_PER_IP || 10;      // connexions WebSocket simultanées par IP
+const MAX_CLIENTS = +process.env.MAX_CLIENTS || 500;              // connexions totales
+const TOKEN_TTL = (+process.env.TOKEN_TTL_HOURS || 12) * 3600e3;  // durée de vie d'une session admin
+const MAX_TOKENS = 20;
+const GLOBAL_PW_FAILS = 20, GLOBAL_WINDOW = 10 * 60e3;            // filet de sécurité : max d'échecs de mot de passe admin, toutes IP confondues
+const gFail = { n: 0, t: 0 };
+function clientIp(req) {
+  const sock = req.socket.remoteAddress || "?";
+  if (!HOPS) return sock;
+  const xff = String(req.headers["x-forwarded-for"] || "").split(",").map((x) => x.trim()).filter(Boolean);
+  return String(xff[xff.length - HOPS] || sock).slice(0, 64);
+}
 
 // ---------- circuits ----------
 // Stockage PERMANENT si UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN sont définis (base Redis gratuite d'Upstash),
@@ -59,10 +77,11 @@ const httpServer = http.createServer((req, res) => {
 
 // ---------- WebSocket ----------
 const wss = new WebSocketServer({ server: httpServer, path: "/ws", maxPayload: 65536 });
-const clients = new Map(), rooms = new Map(), tokens = new Set(), fails = new Map();
+const clients = new Map(), rooms = new Map(), tokens = new Map(), fails = new Map(), ipConns = new Map();
 let nid = 0, dirtyLobby = false;
 const MAX_PER_ROOM = 8, MAX_ROOMS = 100;
 const ITEMS = new Set(["turbo", "oil", "missile", "spikes", "ghost", "bird"]);
+const isAdmin = (c) => c.admin && Date.now() < c.until;
 const TARGETED = new Set(["steal", "give", "splat"]); // évènements envoyés à UN joueur de la salle
 
 const num = (v, m = 1e5) => (typeof v === "number" && isFinite(v) && Math.abs(v) <= m ? v : undefined);
@@ -109,11 +128,32 @@ setInterval(() => {
   }
 }, 50);
 
+// nettoyage : jetons expirés, compteurs d'essais anciens
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, exp] of tokens) if (exp <= now) tokens.delete(k);
+  for (const [k, f] of fails) if (now - f.t > 120000) fails.delete(k);
+}, 60000);
+// heartbeat : coupe les connexions mortes (sinon elles restent comptées dans la limite par IP)
+setInterval(() => {
+  for (const c of clients.values()) {
+    if (c.ws.isAlive === false) { c.ws.terminate(); continue; }
+    c.ws.isAlive = false; try { c.ws.ping(); } catch (e) {}
+  }
+}, 30000);
+
 wss.on("connection", (ws, req) => {
+  ws.on("error", () => {});
+  const ip = clientIp(req);
+  if (process.env.DEBUG_IP) console.log("DEBUG_IP", { xff: req.headers["x-forwarded-for"], cf: req.headers["cf-connecting-ip"], socket: req.socket.remoteAddress, utilisee: ip });
+  const nIp = ipConns.get(ip) || 0;
+  if (nIp >= MAX_CONN_PER_IP || clients.size >= MAX_CLIENTS) return ws.close(1013, "trop de connexions");
+  ipConns.set(ip, nIp + 1);
+  ws.isAlive = true; ws.on("pong", () => { ws.isAlive = true; });
+
   const c = {
     ws, id: "p" + (++nid).toString(36) + crypto.randomBytes(2).toString("hex"),
-    rp: {}, room: null, admin: false, n: 0, t: Date.now(),
-    ip: req.headers["cf-connecting-ip"] || req.socket.remoteAddress,
+    rp: {}, room: null, admin: false, until: 0, n: 0, t: Date.now(), ip,
   };
   clients.set(c.id, c);
   send(ws, { t: "welcome", id: c.id });
@@ -184,20 +224,23 @@ wss.on("connection", (ws, req) => {
         break;
       }
       case "auth": {
-        const f = tooMany(c.ip, now);
-        if (f.n >= 5) return ack(false, { err: "trop d'essais, réessaie dans 1 min" });
-        let ok = false, tok;
-        if (typeof m.tok === "string" && tokens.has(m.tok)) ok = true;
+        let ok = false, tok, until = 0;
+        if (typeof m.tok === "string" && (tokens.get(m.tok) || 0) > now) { ok = true; until = tokens.get(m.tok); } // session existante : jamais bloquée
         else if (typeof m.pw === "string") {
+          const f = tooMany(c.ip, now);
+          if (now - gFail.t > GLOBAL_WINDOW) gFail.n = 0;
+          if (f.n >= 5 || gFail.n >= GLOBAL_PW_FAILS) return ack(false, { err: "trop d'essais, réessaie plus tard" });
           ok = same(m.pw, PW);
-          if (ok) { tok = crypto.randomBytes(24).toString("hex"); tokens.add(tok); }
-          else { f.n++; f.t = now; }
+          if (ok) {
+            if (tokens.size >= MAX_TOKENS) tokens.delete(tokens.keys().next().value); // on retire la plus ancienne
+            tok = crypto.randomBytes(24).toString("hex"); until = now + TOKEN_TTL; tokens.set(tok, until);
+          } else { f.n++; f.t = now; gFail.n++; gFail.t = now; }
         }
-        c.admin = ok;
+        c.admin = ok; c.until = until;
         ack(ok, { tok }); break;
       }
       case "track_set": {
-        if (!c.admin) return ack(false, { err: "admin requis" });
+        if (!isAdmin(c)) return ack(false, { err: "admin requis" });
         const d = validTrack(m.doc);
         if (!d) return ack(false, { err: "circuit invalide" });
         const id = /^[a-z0-9]{1,24}$/i.test(m.id || "") ? m.id : "t" + Date.now().toString(36);
@@ -207,14 +250,16 @@ wss.on("connection", (ws, req) => {
         commit(ack); break;
       }
       case "track_del": {
-        if (!c.admin) return ack(false, { err: "admin requis" });
+        if (!isAdmin(c)) return ack(false, { err: "admin requis" });
         tracks = tracks.filter((t) => t.id !== m.id);
         commit(ack); break;
       }
     }
   });
-  ws.on("close", () => { leaveRoom(c); clients.delete(c.id); });
-  ws.on("error", () => {});
+  ws.on("close", () => {
+    leaveRoom(c); clients.delete(c.id);
+    const k = (ipConns.get(ip) || 1) - 1; if (k > 0) ipConns.set(ip, k); else ipConns.delete(ip);
+  });
 });
 
 httpServer.listen(PORT, () => console.log("Turbo Top sur http://localhost:" + PORT));
